@@ -34,3 +34,25 @@ Tables: `pantry_items`, `recipes`, `recipe_ingredients` (FK -> recipes, cascade 
 4. Press **Run**. Recipes are seeded on first launch.
 
 No Google Maps, mapping SDKs or location permissions are used.
+
+## Automated tests
+
+The recipe-matching logic is covered by JUnit unit tests in `app/src/test/java/com/example/smartpantry/logic/RecipeMatcherTest.java`.
+
+The tests cover:
+- Ingredient name normalisation, including plurals and capitalisation
+- Strict matching when all ingredients and quantities are available
+- Missing ingredients and insufficient quantities
+- Combining duplicate pantry entries
+- Compatible unit conversions and incompatible units
+- Excluding expired items when the setting is enabled
+- Ingredients without expiry dates
+
+To run the tests on Windows, open PowerShell in the project folder and execute:
+
+```powershell
+.\gradlew.bat test --no-daemon --console=plain
+```
+
+A successful run displays `BUILD SUCCESSFUL`. Test results are available under `app/build/reports/tests/`.
+
