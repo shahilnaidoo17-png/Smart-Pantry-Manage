@@ -18,7 +18,20 @@ Pantry data is personal, small and needs to work offline, so a local on-device d
 best fit. Room gives compile-time-checked SQL, DAOs and entities, with no server to host or
 secure. Data persists across app restarts.
 
-Tables: `pantry_items`, `recipes`, `recipe_ingredients` (FK -> recipes, cascade delete).
+### Database schema
+
+The application uses Room ORM with a local SQLite database named `smart_pantry.db`. It contains three entities:
+
+| Table | Important fields | Purpose |
+|---|---|---|
+| `pantry_items` | `id`, `name`, `quantity`, `unit`, `expiryDate` | Stores the ingredients currently in the user's pantry. The ID is auto-generated, and the expiry date is optional. |
+| `recipes` | `id` and recipe details | Stores the recipes available in the application. |
+| `recipe_ingredients` | `id`, `recipeId`, `name`, `quantity`, `unit` | Stores the ingredients and quantities required for each recipe. |
+
+The `recipe_ingredients.recipeId` field is a foreign key referencing `recipes.id`. This creates a one-to-many relationship: one recipe can have multiple required ingredients. The foreign key uses cascade deletion, so deleting a recipe also deletes its associated recipe-ingredient records.
+
+`AppDatabase.java` configures the Room database and provides access to the pantry and recipe DAOs. Database operations use a single-thread executor to avoid blocking the Android UI thread.
+
 
 ## Strict matching (`logic/RecipeMatcher.java`)
 - Names are normalised (case, whitespace, simple plurals: "Tomatoes" == "tomato")
