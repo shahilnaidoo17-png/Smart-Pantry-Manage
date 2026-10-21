@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView android:id="@+id/tvBanner"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="#FFE0B2" android:textColor="#BF360C"
+        android:padding="12dp" android:visibility="gone"/>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvPantry"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:padding="8dp" android:clipToPadding="false"/>
+        <TextView android:id="@+id/tvEmpty"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:gravity="center" android:padding="32dp" android:textSize="16sp"
+            android:text="Your pantry is empty.\nTap + to add your first ingredient."/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAdd"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end" android:layout_margin="16dp"
+            android:contentDescription="Add ingredient"
+            android:src="@android:drawable/ic_input_add"/>
+    </FrameLayout>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNav"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        app:menu="@menu/bottom_nav" xmlns:app="http://schemas.android.com/apk/res-auto"/>
+</LinearLayout>
