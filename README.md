@@ -17,17 +17,17 @@ A recipe is suggested only if *every* ingredient is present in at least the requ
 
 The application is organised around five main screens:
 
-1. **Pantry List (`PantryListActivity`)** — displays saved pantry ingredients and provides access to adding, editing, and deleting items.
-2. **Add/Edit Ingredient (`AddEditItemActivity`)** — allows users to enter an ingredient's name, quantity, unit, and optional expiry date. Input validation helps prevent invalid entries.
-3. **Suggested Recipes (`SuggestedRecipesActivity`)** — compares available pantry stock with recipe requirements. Complete matches appear under the recipes the user can make, while incomplete matches can be viewed separately.
-4. **Recipe Details (`RecipeDetailActivity`)** — displays a selected recipe's required ingredients and preparation method.
-5. **Settings (`SettingsActivity`)** — lets users configure expiry-related preferences.
+1. **Pantry List (`PantryListActivity`)** â€” displays saved pantry ingredients and provides access to adding, editing, and deleting items.
+2. **Add/Edit Ingredient (`AddEditItemActivity`)** â€” allows users to enter an ingredient's name, quantity, unit, and optional expiry date. Input validation helps prevent invalid entries.
+3. **Suggested Recipes (`SuggestedRecipesActivity`)** â€” compares available pantry stock with recipe requirements. Complete matches appear under the recipes the user can make, while incomplete matches can be viewed separately.
+4. **Recipe Details (`RecipeDetailActivity`)** â€” displays a selected recipe's required ingredients and preparation method.
+5. **Settings (`SettingsActivity`)** â€” lets users configure expiry-related preferences.
 
 Navigation uses Android activities and intents, with `NavHelper` assisting with navigation between the main sections. Pantry and recipe data are stored locally using Room and SQLite.
 
 ### Typical user journey
 
-`Pantry List → Add/Edit Ingredient → Pantry List → Suggested Recipes → Recipe Details`
+`Pantry List â†’ Add/Edit Ingredient â†’ Pantry List â†’ Suggested Recipes â†’ Recipe Details`
 
 Users can also open Settings to change their preferences. When pantry contents change, the recipe suggestions can reflect the updated ingredients and quantities.
 
@@ -91,3 +91,21 @@ A successful run displays `BUILD SUCCESSFUL`. Test results are available under `
 ### Latest test verification
 
 The recipe-matching unit test suite was run with Gradle using `--rerun-tasks`. The verified result was 13 tests, 0 failures, 0 errors, and 0 skipped tests. Both debug and release test tasks completed successfully.
+
+
+## Android configuration
+
+The project is an Android application written in Java and built with Gradle.
+
+- **Application ID:** `com.example.smartpantry`
+- **Namespace:** `com.example.smartpantry`
+- **App version:** 1.0
+- **Compile SDK:** Android API 34
+- **Target SDK:** Android API 34
+- **Minimum SDK:** Android API 24 (Android 7.0)
+- **Java compatibility:** Java 8
+- **UI libraries:** AndroidX AppCompat, Material Components, and RecyclerView
+- **Local database:** Room 2.6.1 with SQLite
+- **Unit testing:** JUnit 4.13.2
+
+The minimum SDK is API 24, allowing the application to run on Android 7.0 and newer devices. The app does not declare location or mapping permissions because its features do not require geographic location.
