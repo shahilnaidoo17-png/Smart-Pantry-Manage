@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -29,11 +28,14 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
 
     private final List<RecipeAdapter.Row> strictRows = new ArrayList<>();
     private final List<RecipeAdapter.Row> almostRows = new ArrayList<>();
+
     private boolean showingAlmost = false;
 
     private RecipeAdapter adapter;
-    private TextView tvEmpty, tvNote;
-    private Button btnStrict, btnAlmost;
+    private TextView tvEmpty;
+    private TextView tvNote;
+    private Button btnStrict;
+    private Button btnAlmost;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,14 +49,22 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         btnAlmost = findViewById(R.id.btnAlmost);
 
         adapter = new RecipeAdapter(recipe -> {
-            Intent i = new Intent(this, RecipeDetailActivity.class);
-            i.putExtra(RecipeDetailActivity.EXTRA_RECIPE_ID, recipe.id);
-            startActivity(i);
+            Intent intent = new Intent(
+                    SuggestedRecipesActivity.this,
+                    RecipeDetailActivity.class
+            );
+
+            intent.putExtra(
+                    RecipeDetailActivity.EXTRA_RECIPE_ID,
+                    recipe.id
+            );
+
+            startActivity(intent);
         });
 
-        RecyclerView rv = findViewById(R.id.rvRecipes);
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        rv.setAdapter(adapter);
+        RecyclerView recyclerView = findViewById(R.id.rvRecipes);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
 
         btnStrict.setOnClickListener(v -> {
             showingAlmost = false;
@@ -83,27 +93,36 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         boolean excludeExpired = getSharedPreferences(
                 SettingsActivity.PREFS,
                 Context.MODE_PRIVATE
-        ).getBoolean(SettingsActivity.KEY_EXCLUDE_EXPIRED, true);
+        ).getBoolean(
+                SettingsActivity.KEY_EXCLUDE_EXPIRED,
+                true
+        );
 
         AppDatabase.EXECUTOR.execute(() -> {
-            AppDatabase db = AppDatabase.get(this);
+            AppDatabase db = AppDatabase.get(getApplicationContext());
 
             List<PantryItem> pantry = db.pantryDao().getAll();
             List<Recipe> recipes = db.recipeDao().getAll();
+
             List<RecipeIngredient> allIngredients =
                     db.recipeDao().getAllIngredients();
 
-            Map<Long, List<RecipeIngredient>> byRecipe = new HashMap<>();
+            Map<Long, List<RecipeIngredient>> ingredientsByRecipe =
+                    new HashMap<>();
 
-            for (RecipeIngredient ing : allIngredients) {
-                List<RecipeIngredient> list = byRecipe.get(ing.recipeId);
+            for (RecipeIngredient ingredient : allIngredients) {
+                List<RecipeIngredient> ingredients =
+                        ingredientsByRecipe.get(ingredient.recipeId);
 
-                if (list == null) {
-                    list = new ArrayList<>();
-                    byRecipe.put(ing.recipeId, list);
+                if (ingredients == null) {
+                    ingredients = new ArrayList<>();
+                    ingredientsByRecipe.put(
+                            ingredient.recipeId,
+                            ingredients
+                    );
                 }
 
-                list.add(ing);
+                ingredients.add(ingredient);
             }
 
             Map<String, Double> stock =
@@ -113,7 +132,8 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
             List<RecipeAdapter.Row> almost = new ArrayList<>();
 
             for (Recipe recipe : recipes) {
-                List<RecipeIngredient> needed = byRecipe.get(recipe.id);
+                List<RecipeIngredient> needed =
+                        ingredientsByRecipe.get(recipe.id);
 
                 if (needed == null || needed.isEmpty()) {
                     continue;
@@ -134,56 +154,6 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
                 }
             }
 
-            StringBuilder debug = new StringBuilder();
-
-            debug.append("PANTRY DATA\n");
-
-            for (PantryItem item : pantry) {
-                debug.append(item.name)
-                        .append(" | quantity=")
-                        .append(item.quantity)
-                        .append(" | unit=")
-                        .append(item.unit)
-                        .append(" | expiry=")
-                        .append(item.expiryDate)
-                        .append("\n");
-            }
-
-            debug.append("\nNORMALISED STOCK\n");
-
-            for (Map.Entry<String, Double> entry : stock.entrySet()) {
-                debug.append(entry.getKey())
-                        .append(" = ")
-                        .append(entry.getValue())
-                        .append("\n");
-            }
-
-            for (Recipe recipe : recipes) {
-                if ("Cheese Omelette".equalsIgnoreCase(recipe.name)) {
-                    List<RecipeIngredient> needed = byRecipe.get(recipe.id);
-
-                    debug.append("\nCHEESE OMELETTE DIAGNOSIS\n");
-
-                    if (needed != null && !needed.isEmpty()) {
-                        debug.append(
-                                RecipeMatcher.diagnose(needed, stock)
-                        );
-
-                        debug.append("\nMissing count: ")
-                                .append(
-                                        RecipeMatcher.countMissing(needed, stock)
-                                );
-                    } else {
-                        debug.append("Recipe ingredients were not found.");
-                    }
-
-                    break;
-                }
-            }
-
-            String debugMessage = debug.toString();
-            int ingredientCount = allIngredients.size();
-
             runOnUiThread(() -> {
                 strictRows.clear();
                 strictRows.addAll(strict);
@@ -192,17 +162,6 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
                 almostRows.addAll(almost);
 
                 render();
-
-                // Show detailed diagnostics after rendering the recipe list.
-                tvNote.setText(debugMessage);
-
-                Toast.makeText(
-                        SuggestedRecipesActivity.this,
-                        "Recipes: " + recipes.size()
-                                + " | Ingredients: " + ingredientCount
-                                + " | Pantry: " + pantry.size(),
-                        Toast.LENGTH_LONG
-                ).show();
             });
         });
     }
@@ -217,13 +176,13 @@ public class SuggestedRecipesActivity extends AppCompatActivity {
         btnAlmost.setEnabled(!showingAlmost);
 
         tvNote.setText(showingAlmost
-                ? "Not suggestions yet: each of these needs one more ingredient."
-                : "Every ingredient for these is already in your pantry.");
+                ? "These recipes each need one more ingredient."
+                : "You have all the ingredients needed for these recipes.");
 
         if (rows.isEmpty()) {
             tvEmpty.setText(showingAlmost
-                    ? "No recipes are one ingredient away."
-                    : "No recipes match your pantry yet - add more ingredients");
+                    ? "No recipes are one ingredient away. Add more pantry ingredients to discover recipes."
+                    : "No recipes match your pantry yet. Add more ingredients to discover recipes.");
 
             tvEmpty.setVisibility(View.VISIBLE);
         } else {
