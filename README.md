@@ -109,3 +109,22 @@ The project is an Android application written in Java and built with Gradle.
 - **Unit testing:** JUnit 4.13.2
 
 The minimum SDK is API 24, allowing the application to run on Android 7.0 and newer devices. The app does not declare location or mapping permissions because its features do not require geographic location.
+
+## Assignment submission
+
+The repository includes the assignment report and screenshots.
+
+- **Report:** `402413326_Naidoo_MobileAppDev700_Report.docx`
+- **Screenshots:** `assignment_screenshots/`
+- **Application source:** `app/src/main/`
+- **Unit tests:** `app/src/test/`
+
+### Build verification
+
+The prepared submission was extracted and tested using the Gradle wrapper. After configuring the Android SDK path in the extracted copy, both debug and release unit-test tasks completed successfully.
+
+Run the tests on Windows with:
+
+```powershell
+.\gradlew.bat test --no-daemon --console=plain
+```
