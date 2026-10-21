@@ -88,3 +88,6 @@ To run the tests on Windows, open PowerShell in the project folder and execute:
 
 A successful run displays `BUILD SUCCESSFUL`. Test results are available under `app/build/reports/tests/`.
 
+### Latest test verification
+
+The recipe-matching unit test suite was run with Gradle using `--rerun-tasks`. The verified result was 13 tests, 0 failures, 0 errors, and 0 skipped tests. Both debug and release test tasks completed successfully.
