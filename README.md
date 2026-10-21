@@ -13,6 +13,25 @@ A recipe is suggested only if *every* ingredient is present in at least the requ
 - Settings (expiring-soon alert, ignore expired items when matching)
 - Bottom navigation, input validation, empty-state messages
 
+## Screen flow and navigation
+
+The application is organised around five main screens:
+
+1. **Pantry List (`PantryListActivity`)** — displays saved pantry ingredients and provides access to adding, editing, and deleting items.
+2. **Add/Edit Ingredient (`AddEditItemActivity`)** — allows users to enter an ingredient's name, quantity, unit, and optional expiry date. Input validation helps prevent invalid entries.
+3. **Suggested Recipes (`SuggestedRecipesActivity`)** — compares available pantry stock with recipe requirements. Complete matches appear under the recipes the user can make, while incomplete matches can be viewed separately.
+4. **Recipe Details (`RecipeDetailActivity`)** — displays a selected recipe's required ingredients and preparation method.
+5. **Settings (`SettingsActivity`)** — lets users configure expiry-related preferences.
+
+Navigation uses Android activities and intents, with `NavHelper` assisting with navigation between the main sections. Pantry and recipe data are stored locally using Room and SQLite.
+
+### Typical user journey
+
+`Pantry List → Add/Edit Ingredient → Pantry List → Suggested Recipes → Recipe Details`
+
+Users can also open Settings to change their preferences. When pantry contents change, the recipe suggestions can reflect the updated ingredients and quantities.
+
+
 ## Database choice: SQLite via Room
 Pantry data is personal, small and needs to work offline, so a local on-device database is the
 best fit. Room gives compile-time-checked SQL, DAOs and entities, with no server to host or
