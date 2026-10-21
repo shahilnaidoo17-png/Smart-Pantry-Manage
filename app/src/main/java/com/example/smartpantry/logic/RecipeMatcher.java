@@ -8,72 +8,177 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * The strict-matching rule (assignment section 2.3).
- *
- * A recipe is a strict match only if EVERY ingredient is in the pantry in at least the
- * required quantity. A missing ingredient, or too little of one, means the recipe is excluded.
- *
- * Robustness: names are normalised (case, whitespace, simple plurals) and quantities are
- * converted to a common base unit, so "Tomatoes" matches "tomato" and 1 kg covers 500 g.
- * Units of different kinds (e.g. grams vs pieces) are never assumed to be equal.
- */
 public class RecipeMatcher {
 
-    /** Lower-cases, trims, and singularises the last word: "Tomatoes " -> "tomato". */
     public static String normalizeName(String raw) {
-        if (raw == null) return "";
-        String s = raw.toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
-        int space = s.lastIndexOf(' ');
-        String head = space >= 0 ? s.substring(0, space + 1) : "";
-        String last = space >= 0 ? s.substring(space + 1) : s;
-        return head + singular(last);
+        if (raw == null) {
+            return "";
+        }
+
+        String name = raw.toLowerCase(Locale.ROOT)
+                .trim()
+                .replaceAll("\\s+", " ");
+
+        // Normalise common irregular and common plural ingredient names.
+        if (name.equals("eggs")) return "egg";
+        if (name.equals("tomatoes")) return "tomato";
+        if (name.equals("potatoes")) return "potato";
+        if (name.equals("loaves")) return "loaf";
+        if (name.equals("leaves")) return "leaf";
+
+        int space = name.lastIndexOf(' ');
+        String prefix = space >= 0 ? name.substring(0, space + 1) : "";
+        String lastWord = space >= 0
+                ? name.substring(space + 1)
+                : name;
+
+        return prefix + singular(lastWord);
     }
 
-    private static String singular(String w) {
-        if (w.length() <= 3) return w;
-        if (w.endsWith("ies")) return w.substring(0, w.length() - 3) + "y";       // berries -> berry
-        if (w.endsWith("oes") || w.endsWith("ches") || w.endsWith("shes")
-                || w.endsWith("xes")) return w.substring(0, w.length() - 2);       // tomatoes -> tomato
-        if (w.endsWith("ss") || w.endsWith("us")) return w;                        // hummus, molasses
-        if (w.endsWith("s")) return w.substring(0, w.length() - 1);                // eggs -> egg
-        return w;
+    private static String singular(String word) {
+        if (word.length() <= 3) {
+            return word;
+        }
+
+        if (word.endsWith("ies")) {
+            return word.substring(0, word.length() - 3) + "y";
+        }
+
+        if (word.endsWith("oes")
+                || word.endsWith("ches")
+                || word.endsWith("shes")
+                || word.endsWith("xes")) {
+            return word.substring(0, word.length() - 2);
+        }
+
+        if (word.endsWith("ss") || word.endsWith("us")) {
+            return word;
+        }
+
+        if (word.endsWith("s")) {
+            return word.substring(0, word.length() - 1);
+        }
+
+        return word;
     }
 
-    /** Key combining the normalised name and the unit dimension. */
     private static String key(String name, String unit) {
         return normalizeName(name) + "|" + UnitConverter.dimension(unit);
     }
 
-    /** Total pantry stock per ingredient (duplicate pantry rows are summed), in base units. */
-    public static Map<String, Double> buildStock(List<PantryItem> pantry, boolean excludeExpired) {
+    public static Map<String, Double> buildStock(
+            List<PantryItem> pantry,
+            boolean excludeExpired) {
+
         Map<String, Double> stock = new HashMap<>();
+
         for (PantryItem item : pantry) {
+            if (item == null || item.name == null || item.unit == null) {
+                continue;
+            }
+
             if (excludeExpired) {
                 Integer days = DateUtils.daysUntil(item.expiryDate);
-                if (days != null && days < 0) continue;
+
+                if (days != null && days < 0) {
+                    continue;
+                }
             }
-            String k = key(item.name, item.unit);
-            double amount = UnitConverter.toBase(item.quantity, item.unit);
-            Double current = stock.get(k);
-            stock.put(k, (current == null ? 0 : current) + amount);
+
+            String stockKey = key(item.name, item.unit);
+            double amount = UnitConverter.toBase(
+                    item.quantity, item.unit);
+
+            stock.put(
+                    stockKey,
+                    stock.getOrDefault(stockKey, 0.0) + amount
+            );
         }
+
         return stock;
     }
 
-    /** How many of the recipe's ingredients are missing or insufficient. */
-    public static int countMissing(List<RecipeIngredient> needed, Map<String, Double> stock) {
+    public static int countMissing(
+            List<RecipeIngredient> needed,
+            Map<String, Double> stock) {
+
         int missing = 0;
-        for (RecipeIngredient ing : needed) {
-            Double have = stock.get(key(ing.name, ing.unit));
-            double required = UnitConverter.toBase(ing.quantity, ing.unit);
-            if (have == null || have + 1e-6 < required) missing++;
+
+        for (RecipeIngredient ingredient : needed) {
+            if (ingredient == null
+                    || ingredient.name == null
+                    || ingredient.unit == null) {
+                missing++;
+                continue;
+            }
+
+            String ingredientKey = key(
+                    ingredient.name, ingredient.unit);
+
+            Double available = stock.get(ingredientKey);
+
+            double required = UnitConverter.toBase(
+                    ingredient.quantity, ingredient.unit);
+
+            if (available == null
+                    || available + 1e-6 < required) {
+                missing++;
+            }
         }
+
         return missing;
     }
 
-    /** True only when nothing is missing. A recipe with no ingredients is never suggested. */
-    public static boolean isStrictMatch(List<RecipeIngredient> needed, Map<String, Double> stock) {
-        return !needed.isEmpty() && countMissing(needed, stock) == 0;
+    public static boolean isStrictMatch(
+            List<RecipeIngredient> needed,
+            Map<String, Double> stock) {
+
+        return needed != null
+                && !needed.isEmpty()
+                && countMissing(needed, stock) == 0;
+    }
+
+    public static String diagnose(
+            List<RecipeIngredient> needed,
+            Map<String, Double> stock) {
+
+        StringBuilder result = new StringBuilder();
+
+        result.append("EGG NORMALISATION TEST: ")
+                .append(normalizeName("eggs"))
+                .append("\n");
+
+        result.append("PANTRY EGG KEY TEST: ")
+                .append(key("eggs", "pcs"))
+                .append("\n\n");
+
+        for (RecipeIngredient ingredient : needed) {
+            String ingredientKey = key(
+                    ingredient.name, ingredient.unit);
+
+            Double available = stock.get(ingredientKey);
+
+            double required = UnitConverter.toBase(
+                    ingredient.quantity, ingredient.unit);
+
+            result.append(ingredient.name)
+                    .append(" | key=")
+                    .append(ingredientKey)
+                    .append(" | required=")
+                    .append(required)
+                    .append(" | available=")
+                    .append(available == null
+                            ? "NOT FOUND"
+                            : available)
+                    .append(" | ")
+                    .append(available == null
+                            || available + 1e-6 < required
+                            ? "MISSING"
+                            : "MATCHED")
+                    .append("\n");
+        }
+
+        return result.toString();
     }
 }
+
